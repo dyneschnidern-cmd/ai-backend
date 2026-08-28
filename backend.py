@@ -10,7 +10,7 @@ app = Flask(__name__)
 # CORS(app)
 
 # ============ TEXT GENERATION ============
-def generate_text(prompt, model="gpt-3.5-turbo"):
+def generate_text(prompt, model="gpt-4o-mini"):
     try:
         # Use g4f to get a response from a free GPT-like model
         response = g4f.ChatCompletion.create(
@@ -56,7 +56,7 @@ def generate_lua_code(prompt, task="ui"):
 def get_models():
     # Return available models (hardcoded for simplicity)
     return jsonify({
-        "text": ["gpt-3.5-turbo", "gpt-4", "claude-v2", "llama-2-70b"],
+        "text": ["gpt-4o-mini", "gpt-4", "claude-v2"],
         "image": ["pollinations", "stable-diffusion"]
     })
 
