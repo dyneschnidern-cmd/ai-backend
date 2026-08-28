@@ -1,42 +1,31 @@
 from flask import Flask, request, jsonify
-import g4f
 import requests
-import json
 
 app = Flask(__name__)
 
-# Optional: set up CORS if needed (for web use)
-# from flask_cors import CORS
-# CORS(app)
-
-# ============ TEXT GENERATION ============
-def generate_text(prompt, model="gpt-4o-mini"):
+# ============ TEXT GENERATION (Pollinations) ============
+def generate_text(prompt, model=None):
     try:
-        # Use g4f to get a response from a free GPT-like model
-        response = g4f.ChatCompletion.create(
-            model=model,  # can be "gpt-3.5-turbo", "gpt-4", etc. (g4f supports many)
-            messages=[{"role": "user", "content": prompt}],
-            stream=False
-        )
-        if isinstance(response, str):
-            return response
+        # Pollinations text API (free, no key, model param ignored)
+        url = f"https://text.pollinations.ai/{requests.utils.quote(prompt)}"
+        response = requests.get(url, timeout=60)
+        if response.status_code == 200:
+            return response.text.strip(), None
         else:
-            # g4f may return a response object
-            return str(response)
+            return None, f"Pollinations API returned status {response.status_code}"
     except Exception as e:
         return None, str(e)
 
-# ============ IMAGE GENERATION ============
+# ============ IMAGE GENERATION (Pollinations) ============
 def generate_image(prompt):
     try:
-        # Pollinations.ai free image generation (no key)
-        url = f"https://image.pollinations.ai/prompt/{prompt}?width=512&height=512&nologo=true"
-        return url
+        # Pollinations image URL (no key needed)
+        url = f"https://image.pollinations.ai/prompt/{requests.utils.quote(prompt)}?width=512&height=512&nologo=true"
+        return url, None
     except Exception as e:
         return None, str(e)
 
 # ============ UI / MAP CODE GENERATION ============
-# These can reuse the text generation but with a specific prompt asking for Lua code.
 def generate_lua_code(prompt, task="ui"):
     full_prompt = f"Create Roblox Lua code for {task} based on this description: {prompt}. Only output the code, no explanations."
     code, err = generate_text(full_prompt)
@@ -45,27 +34,28 @@ def generate_lua_code(prompt, task="ui"):
         code = code.strip()
         if code.startswith("```lua"):
             code = code[7:]
+        if code.startswith("```"):
+            code = code[3:]
         if code.endswith("```"):
             code = code[:-3]
-        return code.strip()
+        return code.strip(), None
     else:
         return None, err
 
 # ============ FLASK ENDPOINTS ============
 @app.route('/models', methods=['GET'])
 def get_models():
-    # Return available models (hardcoded for simplicity)
     return jsonify({
-        "text": ["gpt-4o-mini", "gpt-4", "claude-v2"],
-        "image": ["pollinations", "stable-diffusion"]
+        "text": ["pollinations"],
+        "image": ["pollinations"]
     })
 
 @app.route('/generate-text', methods=['POST'])
 def generate_text_endpoint():
     data = request.get_json()
     prompt = data.get('prompt', '')
-    model = data.get('model', 'gpt-3.5-turbo')
-    result, error = generate_text(prompt, model)
+    # model is ignored for Pollinations
+    result, error = generate_text(prompt)
     if error:
         return jsonify({"error": error}), 500
     return jsonify({"result": result})
